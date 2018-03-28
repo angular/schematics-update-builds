@@ -1,0 +1,41 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const http = require("http");
+const ReplaySubject_1 = require("rxjs/ReplaySubject");
+const npmPackageJsonCache = new Map();
+/**
+ * Get the NPM repository's package.json for a package. This is p
+ * @param {string} packageName The package name to fetch.
+ * @param {LoggerApi} logger A logger instance to log debug information.
+ * @returns An observable that will put the pacakge.json content.
+ * @private
+ */
+function getNpmPackageJson(packageName, logger) {
+    const url = `http://registry.npmjs.org/${packageName.replace(/\//g, '%2F')}`;
+    logger.debug(`Getting package.json from ${JSON.stringify(packageName)} (url: ${JSON.stringify(url)})...`);
+    let maybeRequest = npmPackageJsonCache.get(url);
+    if (!maybeRequest) {
+        const subject = new ReplaySubject_1.ReplaySubject(1);
+        const request = http.request(url, response => {
+            let data = '';
+            response.on('data', chunk => data += chunk);
+            response.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    subject.next(json);
+                    subject.complete();
+                }
+                catch (err) {
+                    subject.error(err);
+                }
+            });
+            response.on('error', err => subject.error(err));
+        });
+        request.end();
+        maybeRequest = subject.asObservable();
+        npmPackageJsonCache.set(url, maybeRequest);
+    }
+    return maybeRequest;
+}
+exports.getNpmPackageJson = getNpmPackageJson;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoibnBtLmpzIiwic291cmNlUm9vdCI6Ii4vIiwic291cmNlcyI6WyJwYWNrYWdlcy9zY2hlbWF0aWNzL3VwZGF0ZS91cGRhdGUvbnBtLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7O0FBUUEsNkJBQTZCO0FBRTdCLHNEQUFtRDtBQUluRCxNQUFNLG1CQUFtQixHQUFHLElBQUksR0FBRyxFQUFnRCxDQUFDO0FBR3BGOzs7Ozs7R0FNRztBQUNILDJCQUNFLFdBQW1CLEVBQ25CLE1BQXlCO0lBRXpCLE1BQU0sR0FBRyxHQUFHLDZCQUE2QixXQUFXLENBQUMsT0FBTyxDQUFDLEtBQUssRUFBRSxLQUFLLENBQUMsRUFBRSxDQUFDO0lBQzdFLE1BQU0sQ0FBQyxLQUFLLENBQ1YsNkJBQTZCLElBQUksQ0FBQyxTQUFTLENBQUMsV0FBVyxDQUFDLFVBQVUsSUFBSSxDQUFDLFNBQVMsQ0FBQyxHQUFHLENBQUMsTUFBTSxDQUM1RixDQUFDO0lBRUYsSUFBSSxZQUFZLEdBQUcsbUJBQW1CLENBQUMsR0FBRyxDQUFDLEdBQUcsQ0FBQyxDQUFDO0lBQ2hELEVBQUUsQ0FBQyxDQUFDLENBQUMsWUFBWSxDQUFDLENBQUMsQ0FBQztRQUNsQixNQUFNLE9BQU8sR0FBRyxJQUFJLDZCQUFhLENBQTJCLENBQUMsQ0FBQyxDQUFDO1FBRS9ELE1BQU0sT0FBTyxHQUFHLElBQUksQ0FBQyxPQUFPLENBQUMsR0FBRyxFQUFFLFFBQVEsQ0FBQyxFQUFFO1lBQzNDLElBQUksSUFBSSxHQUFHLEVBQUUsQ0FBQztZQUNkLFFBQVEsQ0FBQyxFQUFFLENBQUMsTUFBTSxFQUFFLEtBQUssQ0FBQyxFQUFFLENBQUMsSUFBSSxJQUFJLEtBQUssQ0FBQyxDQUFDO1lBQzVDLFFBQVEsQ0FBQyxFQUFFLENBQUMsS0FBSyxFQUFFLEdBQUcsRUFBRTtnQkFDdEIsSUFBSSxDQUFDO29CQUNILE1BQU0sSUFBSSxHQUFHLElBQUksQ0FBQyxLQUFLLENBQUMsSUFBSSxDQUFDLENBQUM7b0JBQzlCLE9BQU8sQ0FBQyxJQUFJLENBQUMsSUFBZ0MsQ0FBQyxDQUFDO29CQUMvQyxPQUFPLENBQUMsUUFBUSxFQUFFLENBQUM7Z0JBQ3JCLENBQUM7Z0JBQUMsS0FBSyxDQUFDLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQztvQkFDYixPQUFPLENBQUMsS0FBSyxDQUFDLEdBQUcsQ0FBQyxDQUFDO2dCQUNyQixDQUFDO1lBQ0gsQ0FBQyxDQUFDLENBQUM7WUFDSCxRQUFRLENBQUMsRUFBRSxDQUFDLE9BQU8sRUFBRSxHQUFHLENBQUMsRUFBRSxDQUFDLE9BQU8sQ0FBQyxLQUFLLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FBQztRQUNsRCxDQUFDLENBQUMsQ0FBQztRQUNILE9BQU8sQ0FBQyxHQUFHLEVBQUUsQ0FBQztRQUVkLFlBQVksR0FBRyxPQUFPLENBQUMsWUFBWSxFQUFFLENBQUM7UUFDdEMsbUJBQW1CLENBQUMsR0FBRyxDQUFDLEdBQUcsRUFBRSxZQUFZLENBQUMsQ0FBQztJQUM3QyxDQUFDO0lBRUQsTUFBTSxDQUFDLFlBQVksQ0FBQztBQUN0QixDQUFDO0FBbENELDhDQWtDQyIsInNvdXJjZXNDb250ZW50IjpbIi8qKlxuICogQGxpY2Vuc2VcbiAqIENvcHlyaWdodCBHb29nbGUgSW5jLiBBbGwgUmlnaHRzIFJlc2VydmVkLlxuICpcbiAqIFVzZSBvZiB0aGlzIHNvdXJjZSBjb2RlIGlzIGdvdmVybmVkIGJ5IGFuIE1JVC1zdHlsZSBsaWNlbnNlIHRoYXQgY2FuIGJlXG4gKiBmb3VuZCBpbiB0aGUgTElDRU5TRSBmaWxlIGF0IGh0dHBzOi8vYW5ndWxhci5pby9saWNlbnNlXG4gKi9cbmltcG9ydCB7IGxvZ2dpbmcgfSBmcm9tICdAYW5ndWxhci1kZXZraXQvY29yZSc7XG5pbXBvcnQgKiBhcyBodHRwIGZyb20gJ2h0dHAnO1xuaW1wb3J0IHsgT2JzZXJ2YWJsZSB9IGZyb20gJ3J4anMvT2JzZXJ2YWJsZSc7XG5pbXBvcnQgeyBSZXBsYXlTdWJqZWN0IH0gZnJvbSAncnhqcy9SZXBsYXlTdWJqZWN0JztcbmltcG9ydCB7IE5wbVJlcG9zaXRvcnlQYWNrYWdlSnNvbiB9IGZyb20gJy4vbnBtLXBhY2thZ2UtanNvbic7XG5cblxuY29uc3QgbnBtUGFja2FnZUpzb25DYWNoZSA9IG5ldyBNYXA8c3RyaW5nLCBPYnNlcnZhYmxlPE5wbVJlcG9zaXRvcnlQYWNrYWdlSnNvbj4+KCk7XG5cblxuLyoqXG4gKiBHZXQgdGhlIE5QTSByZXBvc2l0b3J5J3MgcGFja2FnZS5qc29uIGZvciBhIHBhY2thZ2UuIFRoaXMgaXMgcFxuICogQHBhcmFtIHtzdHJpbmd9IHBhY2thZ2VOYW1lIFRoZSBwYWNrYWdlIG5hbWUgdG8gZmV0Y2guXG4gKiBAcGFyYW0ge0xvZ2dlckFwaX0gbG9nZ2VyIEEgbG9nZ2VyIGluc3RhbmNlIHRvIGxvZyBkZWJ1ZyBpbmZvcm1hdGlvbi5cbiAqIEByZXR1cm5zIEFuIG9ic2VydmFibGUgdGhhdCB3aWxsIHB1dCB0aGUgcGFjYWtnZS5qc29uIGNvbnRlbnQuXG4gKiBAcHJpdmF0ZVxuICovXG5leHBvcnQgZnVuY3Rpb24gZ2V0TnBtUGFja2FnZUpzb24oXG4gIHBhY2thZ2VOYW1lOiBzdHJpbmcsXG4gIGxvZ2dlcjogbG9nZ2luZy5Mb2dnZXJBcGksXG4pOiBPYnNlcnZhYmxlPE5wbVJlcG9zaXRvcnlQYWNrYWdlSnNvbj4ge1xuICBjb25zdCB1cmwgPSBgaHR0cDovL3JlZ2lzdHJ5Lm5wbWpzLm9yZy8ke3BhY2thZ2VOYW1lLnJlcGxhY2UoL1xcLy9nLCAnJTJGJyl9YDtcbiAgbG9nZ2VyLmRlYnVnKFxuICAgIGBHZXR0aW5nIHBhY2thZ2UuanNvbiBmcm9tICR7SlNPTi5zdHJpbmdpZnkocGFja2FnZU5hbWUpfSAodXJsOiAke0pTT04uc3RyaW5naWZ5KHVybCl9KS4uLmAsXG4gICk7XG5cbiAgbGV0IG1heWJlUmVxdWVzdCA9IG5wbVBhY2thZ2VKc29uQ2FjaGUuZ2V0KHVybCk7XG4gIGlmICghbWF5YmVSZXF1ZXN0KSB7XG4gICAgY29uc3Qgc3ViamVjdCA9IG5ldyBSZXBsYXlTdWJqZWN0PE5wbVJlcG9zaXRvcnlQYWNrYWdlSnNvbj4oMSk7XG5cbiAgICBjb25zdCByZXF1ZXN0ID0gaHR0cC5yZXF1ZXN0KHVybCwgcmVzcG9uc2UgPT4ge1xuICAgICAgbGV0IGRhdGEgPSAnJztcbiAgICAgIHJlc3BvbnNlLm9uKCdkYXRhJywgY2h1bmsgPT4gZGF0YSArPSBjaHVuayk7XG4gICAgICByZXNwb25zZS5vbignZW5kJywgKCkgPT4ge1xuICAgICAgICB0cnkge1xuICAgICAgICAgIGNvbnN0IGpzb24gPSBKU09OLnBhcnNlKGRhdGEpO1xuICAgICAgICAgIHN1YmplY3QubmV4dChqc29uIGFzIE5wbVJlcG9zaXRvcnlQYWNrYWdlSnNvbik7XG4gICAgICAgICAgc3ViamVjdC5jb21wbGV0ZSgpO1xuICAgICAgICB9IGNhdGNoIChlcnIpIHtcbiAgICAgICAgICBzdWJqZWN0LmVycm9yKGVycik7XG4gICAgICAgIH1cbiAgICAgIH0pO1xuICAgICAgcmVzcG9uc2Uub24oJ2Vycm9yJywgZXJyID0+IHN1YmplY3QuZXJyb3IoZXJyKSk7XG4gICAgfSk7XG4gICAgcmVxdWVzdC5lbmQoKTtcblxuICAgIG1heWJlUmVxdWVzdCA9IHN1YmplY3QuYXNPYnNlcnZhYmxlKCk7XG4gICAgbnBtUGFja2FnZUpzb25DYWNoZS5zZXQodXJsLCBtYXliZVJlcXVlc3QpO1xuICB9XG5cbiAgcmV0dXJuIG1heWJlUmVxdWVzdDtcbn1cbiJdfQ==
