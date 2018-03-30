@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import { logging } from '@angular-devkit/core';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { NpmRepositoryPackageJson } from './npm-package-json';
 /**
  * Get the NPM repository's package.json for a package. This is p
