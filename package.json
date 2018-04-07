@@ -14,8 +14,8 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#8e6c762",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#8e6c762",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#e07b024",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#e07b024",
     "semver": "^5.3.0",
     "semver-intersect": "^1.1.2",
     "rxjs": "^6.0.0-beta.3"
