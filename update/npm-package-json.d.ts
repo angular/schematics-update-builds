@@ -8,6 +8,7 @@
 import { JsonSchemaForNpmPackageJsonFiles } from './package-json';
 export interface NpmRepositoryPackageJson {
     name: string;
+    requestedName: string;
     description: string;
     'dist-tags': {
         [name: string]: string;
