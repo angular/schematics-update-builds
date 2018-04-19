@@ -16,4 +16,4 @@ import { NpmRepositoryPackageJson } from './npm-package-json';
  * @returns An observable that will put the pacakge.json content.
  * @private
  */
-export declare function getNpmPackageJson(packageName: string, registryUrl: string, logger: logging.LoggerApi): Observable<Partial<NpmRepositoryPackageJson>>;
+export declare function getNpmPackageJson(packageName: string, registryUrl: string | undefined, logger: logging.LoggerApi): Observable<Partial<NpmRepositoryPackageJson>>;
