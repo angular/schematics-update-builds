@@ -14,8 +14,8 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#cdfa2b1",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#cdfa2b1",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#766059b",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#766059b",
     "npm-registry-client": "^8.5.1",
     "semver": "^5.3.0",
     "semver-intersect": "^1.1.2",
