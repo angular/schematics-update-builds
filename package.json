@@ -1,6 +1,6 @@
 {
   "name": "@schematics/update",
-  "version": "0.5.11",
+  "version": "0.5.12",
   "description": "Schematics specific to updating packages",
   "keywords": [
     "angular",
@@ -14,8 +14,8 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#9bbc4e6",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#9bbc4e6",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#e5130ea",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#e5130ea",
     "npm-registry-client": "^8.5.1",
     "semver": "^5.3.0",
     "semver-intersect": "^1.1.2",
