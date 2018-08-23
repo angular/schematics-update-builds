@@ -7,7 +7,6 @@ import { PostUpdateSchema } from './schema';
  *   1-beta => 1.0.0-beta
  *
  * Exported for testing only.
- * @internal
  */
 export declare function _coerceVersionNumber(version: string): string | null;
 export default function (options: PostUpdateSchema): Rule;
