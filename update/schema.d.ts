@@ -21,7 +21,7 @@ export interface Schema {
      */
     next?: boolean;
     /**
-     * The packages to get.
+     * The names of package(s) to update.
      */
     packages?: string[];
     /**
