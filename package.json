@@ -1,6 +1,6 @@
 {
   "name": "@schematics/update",
-  "version": "0.11.0-beta.0",
+  "version": "0.11.0-beta.1",
   "description": "Schematics specific to updating packages",
   "keywords": [
     "angular",
@@ -15,8 +15,8 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#6d2e333",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#6d2e333",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#4059fe8",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#4059fe8",
     "pacote": "9.1.1",
     "semver": "5.5.1",
     "semver-intersect": "1.4.0",
