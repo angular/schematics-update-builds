@@ -21,6 +21,10 @@ export interface Schema {
      */
     next?: boolean;
     /**
+     * The preferred package manager configuration files to use for registry settings.
+     */
+    packageManager?: PackageManager;
+    /**
      * The names of package(s) to update.
      */
     packages?: string[];
@@ -34,4 +38,11 @@ export interface Schema {
      * installed version detected.
      */
     to?: string;
+}
+/**
+ * The preferred package manager configuration files to use for registry settings.
+ */
+export declare enum PackageManager {
+    Npm = "npm",
+    Yarn = "yarn"
 }
