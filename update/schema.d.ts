@@ -38,6 +38,10 @@ export interface Schema {
      * installed version detected.
      */
     to?: string;
+    /**
+     * Display additional details during the update process.
+     */
+    verbose?: boolean;
 }
 /**
  * The preferred package manager configuration files to use for registry settings.
