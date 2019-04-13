@@ -45,7 +45,10 @@ function readOptions(logger, yarn = false, showPotentials = false) {
                 logger.info(`Trying '${location}'...found.`);
             }
             const data = fs_1.readFileSync(location, 'utf8');
-            options = Object.assign({}, options, (yarn ? lockfile.parse(data) : ini.parse(data)));
+            options = {
+                ...options,
+                ...(yarn ? lockfile.parse(data) : ini.parse(data)),
+            };
             if (options.cafile) {
                 const cafile = path.resolve(path.dirname(location), options.cafile);
                 delete options.cafile;
@@ -87,12 +90,16 @@ function getNpmPackageJson(packageName, logger, options) {
         catch (_a) { }
         if (options && options.usingYarn) {
             try {
-                npmrc = Object.assign({}, npmrc, readOptions(logger, true, options && options.verbose));
+                npmrc = { ...npmrc, ...readOptions(logger, true, options && options.verbose) };
             }
             catch (_b) { }
         }
     }
-    const resultPromise = pacote.packument(packageName, Object.assign({ 'full-metadata': true }, npmrc, (options && options.registryUrl ? { registry: options.registryUrl } : {})));
+    const resultPromise = pacote.packument(packageName, {
+        'full-metadata': true,
+        ...npmrc,
+        ...(options && options.registryUrl ? { registry: options.registryUrl } : {}),
+    });
     // TODO: find some way to test this
     const response = rxjs_1.from(resultPromise).pipe(operators_1.shareReplay(), operators_1.catchError(err => {
         logger.warn(err.message || err);
