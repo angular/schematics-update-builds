@@ -387,6 +387,9 @@ function _buildPackageInfo(tree, packages, allDependencies, npmPackageJson, logg
         // Find the version from NPM that fits the range to max.
         installedVersion = semver.maxSatisfying(Object.keys(npmPackageJson.versions), packageJsonRange);
     }
+    if (!installedVersion) {
+        throw new schematics_1.SchematicsException(`An unexpected error happened; could not determine version for package ${name}.`);
+    }
     const installedPackageJson = npmPackageJson.versions[installedVersion] || packageContent;
     if (!installedPackageJson) {
         throw new schematics_1.SchematicsException(`An unexpected error happened; package ${name} has no version ${installedVersion}.`);
