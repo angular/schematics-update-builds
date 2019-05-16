@@ -54,6 +54,7 @@ function default_1(options) {
             return cmp == 0 ? a.name.localeCompare(b.name) : cmp;
         });
         if (schematicsToRun.length > 0) {
+            context.logger.info(`** Executing migrations for package '${options.package}' **`);
             const rules = schematicsToRun.map(x => schematics_1.externalSchematic(options.collection, x.name, {}));
             return schematics_1.chain(rules);
         }
