@@ -145,7 +145,9 @@ function _validateUpdatePackages(infoMap, force, logger) {
                 || peerErrors;
     });
     if (!force && peerErrors) {
-        throw new schematics_1.SchematicsException(`Incompatible peer dependencies found. See above.`);
+        throw new schematics_1.SchematicsException(core_1.tags.stripIndents `Incompatible peer dependencies found.
+      Peer dependency warnings when installing dependencies means that those dependencies might not work correctly together.
+      You can use the '--force' option to ignore incompatible peer dependencies and instead address these warnings later.`);
     }
 }
 function _performUpdate(tree, context, infoMap, logger, migrateOnly) {
