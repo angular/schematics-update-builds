@@ -368,9 +368,6 @@ function _usageMessage(options, infoMap, logger) {
         }
         logger.info('  ' + fields.map((x, i) => x.padEnd(pads[i])).join(''));
     });
-    logger.info('\n');
-    logger.info('There might be additional packages that are outdated.');
-    logger.info('Run "ng update --all" to try to update all at the same time.\n');
     return rxjs_1.of(undefined);
 }
 function _buildPackageInfo(tree, packages, allDependencies, npmPackageJson, logger) {
