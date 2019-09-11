@@ -514,7 +514,7 @@ function _addPackageGroup(tree, packages, allDependencies, npmPackageJson, logge
  * be ignored by the --force flag).
  * @private
  */
-function _addPeerDependencies(tree, packages, allDependencies, npmPackageJson, logger) {
+function _addPeerDependencies(tree, packages, allDependencies, npmPackageJson, npmPackageJsonMap, logger) {
     const maybePackage = packages.get(npmPackageJson.name);
     if (!maybePackage) {
         return;
@@ -529,9 +529,17 @@ function _addPeerDependencies(tree, packages, allDependencies, npmPackageJson, l
     const packageJson = npmPackageJson.versions[version];
     const error = false;
     for (const [peer, range] of Object.entries(packageJson.peerDependencies || {})) {
-        if (!packages.has(peer)) {
-            packages.set(peer, range);
+        if (packages.has(peer)) {
+            continue;
         }
+        const peerPackageJson = npmPackageJsonMap.get(peer);
+        if (peerPackageJson) {
+            const peerInfo = _buildPackageInfo(tree, packages, allDependencies, peerPackageJson, logger);
+            if (semver.satisfies(peerInfo.installed.version, range)) {
+                continue;
+            }
+        }
+        packages.set(peer, range);
     }
     if (error) {
         throw new schematics_1.SchematicsException('An error occured, see above.');
@@ -630,7 +638,7 @@ function default_1(options) {
                 lastPackagesSize = packages.size;
                 npmPackageJsonMap.forEach((npmPackageJson) => {
                     _addPackageGroup(tree, packages, allDependencies, npmPackageJson, logger);
-                    _addPeerDependencies(tree, packages, allDependencies, npmPackageJson, logger);
+                    _addPeerDependencies(tree, packages, allDependencies, npmPackageJson, npmPackageJsonMap, logger);
                 });
             } while (packages.size > lastPackagesSize);
             // Build the PackageInfo for each module.
