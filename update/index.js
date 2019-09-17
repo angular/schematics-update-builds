@@ -150,7 +150,7 @@ function _validateUpdatePackages(infoMap, force, logger) {
       You can use the '--force' option to ignore incompatible peer dependencies and instead address these warnings later.`);
     }
 }
-function _performUpdate(tree, context, infoMap, logger, migrateOnly) {
+function _performUpdate(tree, context, infoMap, logger, migrateOnly, migrateExternal) {
     const packageJsonContent = tree.read('/package.json');
     if (!packageJsonContent) {
         throw new schematics_1.SchematicsException('Could not find a package.json. Are you in a Node project?');
@@ -207,6 +207,7 @@ function _performUpdate(tree, context, infoMap, logger, migrateOnly) {
             tree.overwrite('/package.json', JSON.stringify(packageJson, null, 2));
             installTask = [context.addTask(new tasks_1.NodePackageInstallTask())];
         }
+        const externalMigrations = [];
         // Run the migrate schematics with the list of packages to use. The collection contains
         // version information and we need to do this post installation. Please note that the
         // migration COULD fail and leave side effects on disk.
@@ -218,6 +219,15 @@ function _performUpdate(tree, context, infoMap, logger, migrateOnly) {
             const collection = (target.updateMetadata.migrations.match(/^[./]/)
                 ? name + '/'
                 : '') + target.updateMetadata.migrations;
+            if (migrateExternal) {
+                externalMigrations.push({
+                    package: name,
+                    collection,
+                    from: installed.version,
+                    to: target.version,
+                });
+                return;
+            }
             context.addTask(new tasks_1.RunSchematicTask('@schematics/update', 'migrate', {
                 package: name,
                 collection,
@@ -225,6 +235,10 @@ function _performUpdate(tree, context, infoMap, logger, migrateOnly) {
                 to: target.version,
             }), installTask);
         });
+        if (externalMigrations.length > 0) {
+            // tslint:disable-next-line: no-any
+            global.externalMigrations = externalMigrations;
+        }
     }
     return rxjs_1.of(undefined);
 }
@@ -655,7 +669,7 @@ function default_1(options) {
                 }
                 const sublog = new core_1.logging.LevelCapLogger('validation', logger.createChild(''), 'warn');
                 _validateUpdatePackages(infoMap, !!options.force, sublog);
-                return _performUpdate(tree, context, infoMap, logger, !!options.migrateOnly);
+                return _performUpdate(tree, context, infoMap, logger, !!options.migrateOnly, !!options.migrateExternal);
             }
             else {
                 return _usageMessage(options, infoMap, logger);
