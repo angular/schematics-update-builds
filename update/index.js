@@ -356,7 +356,7 @@ function _usageMessage(options, infoMap, logger) {
         if (tag == 'next') {
             command += ' --next';
         }
-        return [name, `${info.installed.version} -> ${version}`, command];
+        return [name, `${info.installed.version} -> ${version} `, command];
     })
         .filter(x => x !== null)
         .sort((a, b) => a && b ? a[0].localeCompare(b[0]) : 0);
