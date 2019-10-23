@@ -1,6 +1,6 @@
 {
   "name": "@schematics/update",
-  "version": "0.900.0-next.14+1.dc2ba3e",
+  "version": "0.900.0-next.14+7.023392f",
   "description": "Schematics specific to updating packages",
   "experimental": true,
   "keywords": [
@@ -16,8 +16,8 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#dc2ba3e77",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#dc2ba3e77",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#023392fa8",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#023392fa8",
     "@yarnpkg/lockfile": "1.1.0",
     "ini": "1.3.5",
     "pacote": "9.5.8",
