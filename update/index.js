@@ -71,16 +71,20 @@ function _updatePeerVersion(infoMap, name, range) {
     }
     return range;
 }
-function _validateForwardPeerDependencies(name, infoMap, peers, logger, next) {
+function _validateForwardPeerDependencies(name, infoMap, peers, peersMeta, logger, next) {
+    let validationFailed = false;
     for (const [peer, range] of Object.entries(peers)) {
         logger.debug(`Checking forward peer ${peer}...`);
         const maybePeerInfo = infoMap.get(peer);
+        const isOptional = peersMeta[peer] && !!peersMeta[peer].optional;
         if (!maybePeerInfo) {
-            logger.warn([
-                `Package ${JSON.stringify(name)} has a missing peer dependency of`,
-                `${JSON.stringify(peer)} @ ${JSON.stringify(range)}.`,
-            ].join(' '));
-            return false;
+            if (!isOptional) {
+                logger.warn([
+                    `Package ${JSON.stringify(name)} has a missing peer dependency of`,
+                    `${JSON.stringify(peer)} @ ${JSON.stringify(range)}.`,
+                ].join(' '));
+            }
+            continue;
         }
         const peerVersion = maybePeerInfo.target && maybePeerInfo.target.packageJson.version
             ? maybePeerInfo.target.packageJson.version
@@ -92,10 +96,11 @@ function _validateForwardPeerDependencies(name, infoMap, peers, logger, next) {
                 `${JSON.stringify(peer)} (requires ${JSON.stringify(range)},`,
                 `would install ${JSON.stringify(peerVersion)})`,
             ].join(' '));
-            return true;
+            validationFailed = true;
+            continue;
         }
     }
-    return false;
+    return validationFailed;
 }
 function _validateReversePeerDependencies(name, version, infoMap, logger, next) {
     for (const [installed, installedInfo] of infoMap.entries()) {
@@ -138,8 +143,8 @@ function _validateUpdatePackages(infoMap, force, next, logger) {
         }
         const pkgLogger = logger.createChild(name);
         logger.debug(`${name}...`);
-        const peers = target.packageJson.peerDependencies || {};
-        peerErrors = _validateForwardPeerDependencies(name, infoMap, peers, pkgLogger, next) || peerErrors;
+        const { peerDependencies = {}, peerDependenciesMeta = {} } = target.packageJson;
+        peerErrors = _validateForwardPeerDependencies(name, infoMap, peerDependencies, peerDependenciesMeta, pkgLogger, next) || peerErrors;
         peerErrors
             = _validateReversePeerDependencies(name, target.version, infoMap, pkgLogger, next)
                 || peerErrors;
