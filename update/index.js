@@ -71,22 +71,22 @@ function _updatePeerVersion(infoMap, name, range) {
     }
     return range;
 }
-function _validateForwardPeerDependencies(name, infoMap, peers, logger) {
+function _validateForwardPeerDependencies(name, infoMap, peers, logger, next) {
     for (const [peer, range] of Object.entries(peers)) {
         logger.debug(`Checking forward peer ${peer}...`);
         const maybePeerInfo = infoMap.get(peer);
         if (!maybePeerInfo) {
-            logger.error([
+            logger.warn([
                 `Package ${JSON.stringify(name)} has a missing peer dependency of`,
                 `${JSON.stringify(peer)} @ ${JSON.stringify(range)}.`,
             ].join(' '));
-            return true;
+            return false;
         }
         const peerVersion = maybePeerInfo.target && maybePeerInfo.target.packageJson.version
             ? maybePeerInfo.target.packageJson.version
             : maybePeerInfo.installed.version;
         logger.debug(`  Range intersects(${range}, ${peerVersion})...`);
-        if (!semver.satisfies(peerVersion, range)) {
+        if (!semver.satisfies(peerVersion, range, { includePrerelease: next || undefined })) {
             logger.error([
                 `Package ${JSON.stringify(name)} has an incompatible peer dependency to`,
                 `${JSON.stringify(peer)} (requires ${JSON.stringify(range)},`,
@@ -97,7 +97,7 @@ function _validateForwardPeerDependencies(name, infoMap, peers, logger) {
     }
     return false;
 }
-function _validateReversePeerDependencies(name, version, infoMap, logger) {
+function _validateReversePeerDependencies(name, version, infoMap, logger, next) {
     for (const [installed, installedInfo] of infoMap.entries()) {
         const installedLogger = logger.createChild(installed);
         installedLogger.debug(`${installed}...`);
@@ -110,7 +110,7 @@ function _validateReversePeerDependencies(name, version, infoMap, logger) {
             }
             // Override the peer version range if it's whitelisted.
             const extendedRange = _updatePeerVersion(infoMap, peer, range);
-            if (!semver.satisfies(version, extendedRange)) {
+            if (!semver.satisfies(version, extendedRange, { includePrerelease: next || undefined })) {
                 logger.error([
                     `Package ${JSON.stringify(installed)} has an incompatible peer dependency to`,
                     `${JSON.stringify(name)} (requires`,
@@ -123,7 +123,7 @@ function _validateReversePeerDependencies(name, version, infoMap, logger) {
     }
     return false;
 }
-function _validateUpdatePackages(infoMap, force, logger) {
+function _validateUpdatePackages(infoMap, force, next, logger) {
     logger.debug('Updating the following packages:');
     infoMap.forEach(info => {
         if (info.target) {
@@ -139,9 +139,9 @@ function _validateUpdatePackages(infoMap, force, logger) {
         const pkgLogger = logger.createChild(name);
         logger.debug(`${name}...`);
         const peers = target.packageJson.peerDependencies || {};
-        peerErrors = _validateForwardPeerDependencies(name, infoMap, peers, pkgLogger) || peerErrors;
+        peerErrors = _validateForwardPeerDependencies(name, infoMap, peers, pkgLogger, next) || peerErrors;
         peerErrors
-            = _validateReversePeerDependencies(name, target.version, infoMap, pkgLogger)
+            = _validateReversePeerDependencies(name, target.version, infoMap, pkgLogger, next)
                 || peerErrors;
     });
     if (!force && peerErrors) {
@@ -668,7 +668,7 @@ function default_1(options) {
                     return _migrateOnly(infoMap.get(options.packages[0]), context, options.from, options.to);
                 }
                 const sublog = new core_1.logging.LevelCapLogger('validation', logger.createChild(''), 'warn');
-                _validateUpdatePackages(infoMap, !!options.force, sublog);
+                _validateUpdatePackages(infoMap, !!options.force, !!options.next, sublog);
                 return _performUpdate(tree, context, infoMap, logger, !!options.migrateOnly, !!options.migrateExternal);
             }
             else {
