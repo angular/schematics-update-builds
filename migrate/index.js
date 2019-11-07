@@ -32,6 +32,14 @@ exports._coerceVersionNumber = _coerceVersionNumber;
 function default_1(options) {
     return (tree, context) => {
         const schematicsToRun = [];
+        const from = _coerceVersionNumber(options.from);
+        if (!from) {
+            throw new schematics_1.SchematicsException(`Invalid from option: ${JSON.stringify(options.from)}`);
+        }
+        const to = semver.validRange('<=' + options.to);
+        if (!to) {
+            throw new schematics_1.SchematicsException(`Invalid to option: ${JSON.stringify(options.to)}`);
+        }
         // Create the collection for the package.
         const collection = context.engine.createCollection(options.collection);
         for (const name of collection.listSchematicNames()) {
@@ -43,7 +51,8 @@ function default_1(options) {
                 if (!version) {
                     throw new schematics_1.SchematicsException(`Invalid migration version: ${JSON.stringify(description['version'])}`);
                 }
-                if (semver.gt(version, options.from) && semver.lte(version, options.to)) {
+                if (semver.gt(version, from) &&
+                    semver.satisfies(version, to, { includePrerelease: true })) {
                     schematicsToRun.push({ name, version });
                 }
             }
@@ -54,6 +63,7 @@ function default_1(options) {
             return cmp == 0 ? a.name.localeCompare(b.name) : cmp;
         });
         if (schematicsToRun.length > 0) {
+            context.logger.info(`** Executing migrations for package '${options.package}' **`);
             const rules = schematicsToRun.map(x => schematics_1.externalSchematic(options.collection, x.name, {}));
             return schematics_1.chain(rules);
         }
