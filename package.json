@@ -1,6 +1,6 @@
 {
   "name": "@schematics/update",
-  "version": "0.900.0-next.19+176.3079b06",
+  "version": "0.900.0-next.19+159.eb3c239",
   "description": "Schematics specific to updating packages",
   "experimental": true,
   "keywords": [
@@ -16,12 +16,12 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#3079b06bd",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#3079b06bd",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#eb3c23965",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#eb3c23965",
     "@yarnpkg/lockfile": "1.1.0",
     "ini": "1.3.5",
     "npm-package-arg": "^7.0.0",
-    "pacote": "10.2.0",
+    "pacote": "10.1.5",
     "rxjs": "6.5.3",
     "semver": "6.3.0",
     "semver-intersect": "1.4.0"
