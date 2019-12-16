@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = require("@angular-devkit/core");
 const schematics_1 = require("@angular-devkit/schematics");
 const tasks_1 = require("@angular-devkit/schematics/tasks");
+const npa = require("npm-package-arg");
 const rxjs_1 = require("rxjs");
 const operators_1 = require("rxjs/operators");
 const semver = require("semver");
@@ -71,33 +72,38 @@ function _updatePeerVersion(infoMap, name, range) {
     }
     return range;
 }
-function _validateForwardPeerDependencies(name, infoMap, peers, logger) {
+function _validateForwardPeerDependencies(name, infoMap, peers, peersMeta, logger, next) {
+    let validationFailed = false;
     for (const [peer, range] of Object.entries(peers)) {
         logger.debug(`Checking forward peer ${peer}...`);
         const maybePeerInfo = infoMap.get(peer);
+        const isOptional = peersMeta[peer] && !!peersMeta[peer].optional;
         if (!maybePeerInfo) {
-            logger.error([
-                `Package ${JSON.stringify(name)} has a missing peer dependency of`,
-                `${JSON.stringify(peer)} @ ${JSON.stringify(range)}.`,
-            ].join(' '));
-            return true;
+            if (!isOptional) {
+                logger.warn([
+                    `Package ${JSON.stringify(name)} has a missing peer dependency of`,
+                    `${JSON.stringify(peer)} @ ${JSON.stringify(range)}.`,
+                ].join(' '));
+            }
+            continue;
         }
         const peerVersion = maybePeerInfo.target && maybePeerInfo.target.packageJson.version
             ? maybePeerInfo.target.packageJson.version
             : maybePeerInfo.installed.version;
         logger.debug(`  Range intersects(${range}, ${peerVersion})...`);
-        if (!semver.satisfies(peerVersion, range)) {
+        if (!semver.satisfies(peerVersion, range, { includePrerelease: next || undefined })) {
             logger.error([
                 `Package ${JSON.stringify(name)} has an incompatible peer dependency to`,
                 `${JSON.stringify(peer)} (requires ${JSON.stringify(range)},`,
                 `would install ${JSON.stringify(peerVersion)})`,
             ].join(' '));
-            return true;
+            validationFailed = true;
+            continue;
         }
     }
-    return false;
+    return validationFailed;
 }
-function _validateReversePeerDependencies(name, version, infoMap, logger) {
+function _validateReversePeerDependencies(name, version, infoMap, logger, next) {
     for (const [installed, installedInfo] of infoMap.entries()) {
         const installedLogger = logger.createChild(installed);
         installedLogger.debug(`${installed}...`);
@@ -110,7 +116,7 @@ function _validateReversePeerDependencies(name, version, infoMap, logger) {
             }
             // Override the peer version range if it's whitelisted.
             const extendedRange = _updatePeerVersion(infoMap, peer, range);
-            if (!semver.satisfies(version, extendedRange)) {
+            if (!semver.satisfies(version, extendedRange, { includePrerelease: next || undefined })) {
                 logger.error([
                     `Package ${JSON.stringify(installed)} has an incompatible peer dependency to`,
                     `${JSON.stringify(name)} (requires`,
@@ -123,7 +129,7 @@ function _validateReversePeerDependencies(name, version, infoMap, logger) {
     }
     return false;
 }
-function _validateUpdatePackages(infoMap, force, logger) {
+function _validateUpdatePackages(infoMap, force, next, logger) {
     logger.debug('Updating the following packages:');
     infoMap.forEach(info => {
         if (info.target) {
@@ -138,10 +144,10 @@ function _validateUpdatePackages(infoMap, force, logger) {
         }
         const pkgLogger = logger.createChild(name);
         logger.debug(`${name}...`);
-        const peers = target.packageJson.peerDependencies || {};
-        peerErrors = _validateForwardPeerDependencies(name, infoMap, peers, pkgLogger) || peerErrors;
+        const { peerDependencies = {}, peerDependenciesMeta = {} } = target.packageJson;
+        peerErrors = _validateForwardPeerDependencies(name, infoMap, peerDependencies, peerDependenciesMeta, pkgLogger, next) || peerErrors;
         peerErrors
-            = _validateReversePeerDependencies(name, target.version, infoMap, pkgLogger)
+            = _validateReversePeerDependencies(name, target.version, infoMap, pkgLogger, next)
                 || peerErrors;
     });
     if (!force && peerErrors) {
@@ -571,11 +577,11 @@ function _getAllDependencies(tree) {
     catch (e) {
         throw new schematics_1.SchematicsException('package.json could not be parsed: ' + e.message);
     }
-    return new Map([
+    return [
         ...Object.entries(packageJson.peerDependencies || {}),
         ...Object.entries(packageJson.devDependencies || {}),
         ...Object.entries(packageJson.dependencies || {}),
-    ]);
+    ];
 }
 function _formatVersion(version) {
     if (version === undefined) {
@@ -591,6 +597,15 @@ function _formatVersion(version) {
         throw new schematics_1.SchematicsException(`Invalid migration version: ${JSON.stringify(version)}`);
     }
     return version;
+}
+/**
+ * Returns whether or not the given package specifier (the value string in a
+ * `package.json` dependency) is hosted in the NPM registry.
+ * @throws When the specifier cannot be parsed.
+ */
+function isPkgFromRegistry(name, specifier) {
+    const result = npa.resolve(name, specifier);
+    return !!result.registry;
 }
 function default_1(options) {
     if (!options.packages) {
@@ -611,12 +626,21 @@ function default_1(options) {
     }
     options.from = _formatVersion(options.from);
     options.to = _formatVersion(options.to);
+    const usingYarn = options.packageManager === 'yarn';
     return (tree, context) => {
         const logger = context.logger;
-        const allDependencies = _getAllDependencies(tree);
-        const packages = _buildPackageList(options, allDependencies, logger);
-        const usingYarn = options.packageManager === 'yarn';
-        return rxjs_1.from([...allDependencies.keys()]).pipe(
+        const npmDeps = new Map(_getAllDependencies(tree).filter(([name, specifier]) => {
+            try {
+                return isPkgFromRegistry(name, specifier);
+            }
+            catch (_a) {
+                // Abort on failure because package.json is malformed.
+                throw new schematics_1.SchematicsException(`Failed to parse dependency "${name}" with specifier "${specifier}"`
+                    + ` from package.json. Is the specifier malformed?`);
+            }
+        }));
+        const packages = _buildPackageList(options, npmDeps, logger);
+        return rxjs_1.from(npmDeps.keys()).pipe(
         // Grab all package.json from the npm repository. This requires a lot of HTTP calls so we
         // try to parallelize as many as possible.
         operators_1.mergeMap(depName => npm_1.getNpmPackageJson(depName, logger, { registryUrl: options.registry, usingYarn, verbose: options.verbose })), 
@@ -651,14 +675,14 @@ function default_1(options) {
             do {
                 lastPackagesSize = packages.size;
                 npmPackageJsonMap.forEach((npmPackageJson) => {
-                    _addPackageGroup(tree, packages, allDependencies, npmPackageJson, logger);
-                    _addPeerDependencies(tree, packages, allDependencies, npmPackageJson, npmPackageJsonMap, logger);
+                    _addPackageGroup(tree, packages, npmDeps, npmPackageJson, logger);
+                    _addPeerDependencies(tree, packages, npmDeps, npmPackageJson, npmPackageJsonMap, logger);
                 });
             } while (packages.size > lastPackagesSize);
             // Build the PackageInfo for each module.
             const packageInfoMap = new Map();
             npmPackageJsonMap.forEach((npmPackageJson) => {
-                packageInfoMap.set(npmPackageJson.name, _buildPackageInfo(tree, packages, allDependencies, npmPackageJson, logger));
+                packageInfoMap.set(npmPackageJson.name, _buildPackageInfo(tree, packages, npmDeps, npmPackageJson, logger));
             });
             return packageInfoMap;
         }), operators_1.switchMap(infoMap => {
@@ -668,7 +692,7 @@ function default_1(options) {
                     return _migrateOnly(infoMap.get(options.packages[0]), context, options.from, options.to);
                 }
                 const sublog = new core_1.logging.LevelCapLogger('validation', logger.createChild(''), 'warn');
-                _validateUpdatePackages(infoMap, !!options.force, sublog);
+                _validateUpdatePackages(infoMap, !!options.force, !!options.next, sublog);
                 return _performUpdate(tree, context, infoMap, logger, !!options.migrateOnly, !!options.migrateExternal);
             }
             else {
