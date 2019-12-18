@@ -47,8 +47,6 @@ export interface Schema {
  * The preferred package manager configuration files to use for registry settings.
  */
 export declare enum PackageManager {
-    Cnpm = "cnpm",
     Npm = "npm",
-    Pnpm = "pnpm",
     Yarn = "yarn"
 }
