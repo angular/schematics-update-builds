@@ -653,7 +653,7 @@ function default_1(options) {
             // `--all` situation. There is an edge case here where a public package peer depends on a
             // private one, but it's rare enough.
             if (!npmPackageJson.name) {
-                if (packages.has(npmPackageJson.requestedName)) {
+                if (npmPackageJson.requestedName && packages.has(npmPackageJson.requestedName)) {
                     if (options.all) {
                         logger.warn(`Package ${JSON.stringify(npmPackageJson.requestedName)} was not `
                             + 'found on the registry. Skipping.');
@@ -665,6 +665,7 @@ function default_1(options) {
                 }
             }
             else {
+                // If a name is present, it is assumed to be fully populated
                 acc.set(npmPackageJson.name, npmPackageJson);
             }
             return acc;
