@@ -12,6 +12,8 @@ const core_1 = require("@angular-devkit/core");
 const schematics_1 = require("@angular-devkit/schematics");
 const tasks_1 = require("@angular-devkit/schematics/tasks");
 const npa = require("npm-package-arg");
+const rxjs_1 = require("rxjs");
+const operators_1 = require("rxjs/operators");
 const semver = require("semver");
 const npm_1 = require("./npm");
 // Angular guarantees that a major is compatible with its following major (so packages that depend
@@ -245,14 +247,15 @@ function _performUpdate(tree, context, infoMap, logger, migrateOnly, migrateExte
             global.externalMigrations = externalMigrations;
         }
     }
+    return rxjs_1.of(undefined);
 }
 function _migrateOnly(info, context, from, to) {
     if (!info) {
-        return;
+        return rxjs_1.of();
     }
     const target = info.installed;
     if (!target || !target.updateMetadata.migrations) {
-        return;
+        return rxjs_1.of(undefined);
     }
     const collection = (target.updateMetadata.migrations.match(/^[./]/)
         ? info.name + '/'
@@ -263,6 +266,7 @@ function _migrateOnly(info, context, from, to) {
         from: from,
         to: to || target.version,
     }));
+    return rxjs_1.of(undefined);
 }
 function _getUpdateMetadata(packageJson, logger) {
     const metadata = packageJson['ng-update'];
@@ -365,7 +369,7 @@ function _usageMessage(options, infoMap, logger) {
         .sort((a, b) => a && b ? a[0].localeCompare(b[0]) : 0);
     if (packagesToUpdate.length == 0) {
         logger.info('We analyzed your package.json and everything seems to be in order. Good work!');
-        return;
+        return rxjs_1.of(undefined);
     }
     logger.info('We analyzed your package.json, there are some packages to update:\n');
     // Find the largest name to know the padding needed.
@@ -383,7 +387,7 @@ function _usageMessage(options, infoMap, logger) {
         }
         logger.info('  ' + fields.map((x, i) => x.padEnd(pads[i])).join(''));
     });
-    return;
+    return rxjs_1.of(undefined);
 }
 function _buildPackageInfo(tree, packages, allDependencies, npmPackageJson, logger) {
     const name = npmPackageJson.name;
@@ -624,7 +628,7 @@ function default_1(options) {
     options.from = _formatVersion(options.from);
     options.to = _formatVersion(options.to);
     const usingYarn = options.packageManager === 'yarn';
-    return async (tree, context) => {
+    return (tree, context) => {
         const logger = context.logger;
         const npmDeps = new Map(_getAllDependencies(tree).filter(([name, specifier]) => {
             try {
@@ -637,11 +641,12 @@ function default_1(options) {
             }
         }));
         const packages = _buildPackageList(options, npmDeps, logger);
+        return rxjs_1.from(npmDeps.keys()).pipe(
         // Grab all package.json from the npm repository. This requires a lot of HTTP calls so we
         // try to parallelize as many as possible.
-        const allPackageMetadata = await Promise.all(Array.from(npmDeps.keys()).map(depName => npm_1.getNpmPackageJson(depName, logger, { registryUrl: options.registry, usingYarn, verbose: options.verbose })));
+        operators_1.mergeMap(depName => npm_1.getNpmPackageJson(depName, logger, { registryUrl: options.registry, usingYarn, verbose: options.verbose })), 
         // Build a map of all dependencies and their packageJson.
-        const npmPackageJsonMap = allPackageMetadata.reduce((acc, npmPackageJson) => {
+        operators_1.reduce((acc, npmPackageJson) => {
             // If the package was not found on the registry. It could be private, so we will just
             // ignore. If the package was part of the list, we will error out, but will simply ignore
             // if it's either not requested (so just part of package.json. silently) or if it's a
@@ -664,36 +669,38 @@ function default_1(options) {
                 acc.set(npmPackageJson.name, npmPackageJson);
             }
             return acc;
-        }, new Map());
-        // Augment the command line package list with packageGroups and forward peer dependencies.
-        // Each added package may uncover new package groups and peer dependencies, so we must
-        // repeat this process until the package list stabilizes.
-        let lastPackagesSize;
-        do {
-            lastPackagesSize = packages.size;
+        }, new Map()), operators_1.map(npmPackageJsonMap => {
+            // Augment the command line package list with packageGroups and forward peer dependencies.
+            // Each added package may uncover new package groups and peer dependencies, so we must
+            // repeat this process until the package list stabilizes.
+            let lastPackagesSize;
+            do {
+                lastPackagesSize = packages.size;
+                npmPackageJsonMap.forEach((npmPackageJson) => {
+                    _addPackageGroup(tree, packages, npmDeps, npmPackageJson, logger);
+                    _addPeerDependencies(tree, packages, npmDeps, npmPackageJson, npmPackageJsonMap, logger);
+                });
+            } while (packages.size > lastPackagesSize);
+            // Build the PackageInfo for each module.
+            const packageInfoMap = new Map();
             npmPackageJsonMap.forEach((npmPackageJson) => {
-                _addPackageGroup(tree, packages, npmDeps, npmPackageJson, logger);
-                _addPeerDependencies(tree, packages, npmDeps, npmPackageJson, npmPackageJsonMap, logger);
+                packageInfoMap.set(npmPackageJson.name, _buildPackageInfo(tree, packages, npmDeps, npmPackageJson, logger));
             });
-        } while (packages.size > lastPackagesSize);
-        // Build the PackageInfo for each module.
-        const packageInfoMap = new Map();
-        npmPackageJsonMap.forEach((npmPackageJson) => {
-            packageInfoMap.set(npmPackageJson.name, _buildPackageInfo(tree, packages, npmDeps, npmPackageJson, logger));
-        });
-        // Now that we have all the information, check the flags.
-        if (packages.size > 0) {
-            if (options.migrateOnly && options.from && options.packages) {
-                _migrateOnly(packageInfoMap.get(options.packages[0]), context, options.from, options.to);
-                return;
+            return packageInfoMap;
+        }), operators_1.switchMap(infoMap => {
+            // Now that we have all the information, check the flags.
+            if (packages.size > 0) {
+                if (options.migrateOnly && options.from && options.packages) {
+                    return _migrateOnly(infoMap.get(options.packages[0]), context, options.from, options.to);
+                }
+                const sublog = new core_1.logging.LevelCapLogger('validation', logger.createChild(''), 'warn');
+                _validateUpdatePackages(infoMap, !!options.force, !!options.next, sublog);
+                return _performUpdate(tree, context, infoMap, logger, !!options.migrateOnly, !!options.migrateExternal);
             }
-            const sublog = new core_1.logging.LevelCapLogger('validation', logger.createChild(''), 'warn');
-            _validateUpdatePackages(packageInfoMap, !!options.force, !!options.next, sublog);
-            _performUpdate(tree, context, packageInfoMap, logger, !!options.migrateOnly, !!options.migrateExternal);
-        }
-        else {
-            _usageMessage(options, packageInfoMap, logger);
-        }
+            else {
+                return _usageMessage(options, infoMap, logger);
+            }
+        }), operators_1.switchMap(() => rxjs_1.of(tree)));
     };
 }
 exports.default = default_1;

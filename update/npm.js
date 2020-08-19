@@ -4,6 +4,8 @@ exports.getNpmPackageJson = void 0;
 const fs_1 = require("fs");
 const os_1 = require("os");
 const path = require("path");
+const rxjs_1 = require("rxjs");
+const operators_1 = require("rxjs/operators");
 const ini = require('ini');
 const lockfile = require('@yarnpkg/lockfile');
 const pacote = require('pacote');
@@ -100,10 +102,10 @@ function getNpmPackageJson(packageName, logger, options) {
         ...(options && options.registryUrl ? { registry: options.registryUrl } : {}),
     });
     // TODO: find some way to test this
-    const response = resultPromise.catch((err) => {
+    const response = rxjs_1.from(resultPromise).pipe(operators_1.shareReplay(), operators_1.catchError(err => {
         logger.warn(err.message || err);
-        return { requestedName: packageName };
-    });
+        return rxjs_1.EMPTY;
+    }));
     npmPackageJsonCache.set(packageName, response);
     return response;
 }
