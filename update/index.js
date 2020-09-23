@@ -45,7 +45,7 @@ function angularMajorCompatGuarantee(range) {
 exports.angularMajorCompatGuarantee = angularMajorCompatGuarantee;
 // This is a map of packageGroupName to range extending function. If it isn't found, the range is
 // kept the same.
-const peerCompatibleWhitelist = {
+const knownPeerCompatibleList = {
     '@angular/core': angularMajorCompatGuarantee,
 };
 function _updatePeerVersion(infoMap, name, range) {
@@ -60,7 +60,7 @@ function _updatePeerVersion(infoMap, name, range) {
     else {
         name = maybePackageInfo.installed.updateMetadata.packageGroupName || name;
     }
-    const maybeTransform = peerCompatibleWhitelist[name];
+    const maybeTransform = knownPeerCompatibleList[name];
     if (maybeTransform) {
         if (typeof maybeTransform == 'function') {
             return maybeTransform(range);
@@ -113,7 +113,7 @@ function _validateReversePeerDependencies(name, version, infoMap, logger, next) 
                 // that are unmet but we have no effect on.
                 continue;
             }
-            // Override the peer version range if it's whitelisted.
+            // Override the peer version range if it's known as a compatible.
             const extendedRange = _updatePeerVersion(infoMap, peer, range);
             if (!semver.satisfies(version, extendedRange, { includePrerelease: next || undefined })) {
                 logger.error([
