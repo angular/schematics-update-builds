@@ -383,8 +383,6 @@ function _usageMessage(options, infoMap, logger) {
         }
         logger.info('  ' + fields.map((x, i) => x.padEnd(pads[i])).join(''));
     });
-    logger.info(`\nThere might be additional packages which don't provide 'ng update' capabilities that are outdated.\n`
-        + `You can update the addition packages by running the update command of your package manager.`);
     return;
 }
 function _buildPackageInfo(tree, packages, allDependencies, npmPackageJson, logger) {
