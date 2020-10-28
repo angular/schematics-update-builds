@@ -633,9 +633,8 @@ function default_1(options) {
                 return isPkgFromRegistry(name, specifier);
             }
             catch (_a) {
-                // Abort on failure because package.json is malformed.
-                throw new schematics_1.SchematicsException(`Failed to parse dependency "${name}" with specifier "${specifier}"`
-                    + ` from package.json. Is the specifier malformed?`);
+                logger.warn(`Package ${name} was not found on the registry. Skipping.`);
+                return false;
             }
         }));
         const packages = _buildPackageList(options, npmDeps, logger);
