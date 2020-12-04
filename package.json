@@ -1,6 +1,6 @@
 {
   "name": "@schematics/update",
-  "version": "0.1101.0-next.0+41.064d620",
+  "version": "0.1101.0-next.1+15.eb30a92",
   "description": "Schematics specific to updating packages",
   "experimental": true,
   "keywords": [
@@ -16,8 +16,8 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#064d62014",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#064d62014",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#eb30a92e8",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#eb30a92e8",
     "@yarnpkg/lockfile": "1.1.0",
     "ini": "1.3.5",
     "npm-package-arg": "^8.0.0",
@@ -39,11 +39,5 @@
   "bugs": {
     "url": "https://github.com/angular/angular-cli/issues"
   },
-  "homepage": "https://github.com/angular/angular-cli",
-  "husky": {
-    "hooks": {
-      "commit-msg": "yarn -s ng-dev commit-message pre-commit-validate --file-env-variable HUSKY_GIT_PARAMS",
-      "prepare-commit-msg": "yarn -s ng-dev commit-message restore-commit-message-draft --file-env-variable HUSKY_GIT_PARAMS"
-    }
-  }
+  "homepage": "https://github.com/angular/angular-cli"
 }
