@@ -40,7 +40,7 @@ export interface Schema {
      */
     to?: string;
     /**
-     * When true, display additional details during the update process.
+     * Display additional details during the update process.
      */
     verbose?: boolean;
 }
