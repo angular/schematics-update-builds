@@ -621,7 +621,7 @@ function default_1(options) {
             try {
                 return isPkgFromRegistry(name, specifier);
             }
-            catch (_a) {
+            catch {
                 logger.warn(`Package ${name} was not found on the registry. Skipping.`);
                 return false;
             }

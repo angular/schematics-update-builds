@@ -72,7 +72,7 @@ function readOptions(logger, yarn = false, showPotentials = false) {
                             try {
                                 options['ca'] = fs_1.readFileSync(cafile, 'utf8').replace(/\r?\n/g, '\n');
                             }
-                            catch (_a) { }
+                            catch { }
                         }
                         break;
                     default:
@@ -111,12 +111,12 @@ function getNpmPackageJson(packageName, logger, options) {
         try {
             npmrc = readOptions(logger, false, options && options.verbose);
         }
-        catch (_a) { }
+        catch { }
         if (options && options.usingYarn) {
             try {
                 npmrc = { ...npmrc, ...readOptions(logger, true, options && options.verbose) };
             }
-            catch (_b) { }
+            catch { }
         }
     }
     const resultPromise = pacote.packument(packageName, {
