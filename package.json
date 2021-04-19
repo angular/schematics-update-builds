@@ -16,8 +16,8 @@
   ],
   "schematics": "./collection.json",
   "dependencies": {
-    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#4c927deff",
-    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#4c927deff",
+    "@angular-devkit/core": "github:angular/angular-devkit-core-builds#187c41430",
+    "@angular-devkit/schematics": "github:angular/angular-devkit-schematics-builds#187c41430",
     "@yarnpkg/lockfile": "1.1.0",
     "ini": "2.0.0",
     "npm-package-arg": "^8.0.0",
